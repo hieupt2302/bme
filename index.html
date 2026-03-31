@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hệ Thống Phục Hồi Chức Năng Bàn Tay - BME</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --primary: #00e5ff;
+            --success: #00e676;
+            --danger: #ff1744;
+            --panel-bg: rgba(20, 25, 35, 0.95);
+        }
+
+        body {
+            margin: 0; height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+            font-family: 'Segoe UI', sans-serif; color: white; overflow: hidden;
+        }
+
+        /* ===== AUTH OVERLAY ===== */
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: flex; z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+
+        .auth-box {
+            background: var(--panel-bg); padding: 50px 55px; border-radius: 25px;
+            border: 2px solid var(--primary); text-align: center;
+            box-shadow: 0 0 60px rgba(0, 229, 255, 0.25);
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            width: 380px; box-sizing: border-box;
+        }
+
+        .auth-box h1 {
+            color: var(--primary); margin: 0 0 8px 0;
+            font-size: 28px; letter-spacing: 3px;
+        }
+
+        .auth-box h2 {
+            color: #a0aec0; margin: 0 0 4px 0;
+            font-size: 15px; font-weight: 400; letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .auth-box input {
+            padding: 14px 16px; width: 100%; border-radius: 10px; border: none;
+            font-size: 16px; background: #1e2535; color: white;
+            border: 1px solid rgba(255,255,255,0.1); outline: none;
+            transition: border 0.2s; box-sizing: border-box;
+        }
+        .auth-box input:focus { border-color: var(--primary); }
+        .auth-box input::placeholder { color: #5a6a80; }
+
+        .auth-error {
+            color: var(--danger); font-size: 13px; min-height: 18px;
+            width: 100%; text-align: center; font-weight: 500;
+        }
+
+        .auth-link {
+            color: var(--primary); cursor: pointer; font-size: 13px;
+            text-decoration: underline; margin-top: 4px; opacity: 0.85;
+        }
+        .auth-link:hover { opacity: 1; }
+
+        .auth-panel { width: 100%; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+
+        /* ===== GAME UI ===== */
+        .header {
+            color: var(--primary); font-size: 30px; font-weight: 800;
+            margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        .game-wrapper {
+            position: relative; width: 1100px; height: 650px; display: flex; gap: 25px;
+        }
+
+        .game-area {
+            position: relative; flex: 2.5; background: #000;
+            border-radius: 25px; border: 2px solid rgba(0, 229, 255, 0.2);
+            overflow: hidden;
+        }
+
+        canvas { width: 100%; height: 100%; transform: scaleX(-1); object-fit: cover; }
+
+        .sidebar { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+        .metric-card {
+            background: var(--panel-bg); padding: 25px; border-radius: 20px;
+            border-left: 6px solid var(--primary);
+        }
+
+        .metric-label { font-size: 14px; color: #a0aec0; text-transform: uppercase; font-weight: bold; }
+        .metric-value { font-size: 45px; font-weight: 800; font-family: monospace; margin-top: 10px; }
+
+        #resultModal {
+            display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.95); z-index: 100;
+            flex-direction: column; align-items: center; justify-content: center; border-radius: 25px;
+        }
+
+        .status-ok { color: var(--success); font-size: 32px; font-weight: bold; }
+        .status-warn { color: var(--danger); font-size: 32px; font-weight: bold; }
+
+        .btn {
+            background: linear-gradient(135deg, #00e5ff, #0083b0);
+            color: white; border: none; padding: 15px 40px; border-radius: 12px;
+            font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s;
+            width: 100%;
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,229,255,0.3); }
+        .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: linear-gradient(135deg, #4b6cb7, #182848); }
+        .btn-danger { background: linear-gradient(135deg, #ff1744, #d50000); }
+
+        .input_video { display: none; }
+
+        #handStatusIndicator {
+            position: absolute; top: 20px; left: 20px; padding: 10px 20px;
+            border-radius: 50px; font-weight: bold; font-size: 18px;
+            background: rgba(0,0,0,0.6); z-index: 10;
+        }
+
+        /* ===== HISTORY MODAL ===== */
+        #historyModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+        .history-content {
+            background: var(--panel-bg); padding: 40px; border-radius: 20px;
+            border: 2px solid #4b6cb7; width: 85%; max-height: 85vh; overflow-y: auto;
+        }
+        .history-table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: center; }
+        .history-table th { padding: 15px; border-bottom: 2px solid #4b6cb7; color: #a0aec0; position: sticky; top: 0; background: var(--panel-bg); }
+        .history-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .history-actions { display: flex; gap: 15px; justify-content: center; margin-top: 30px; }
+
+        /* Spinner */
+        .saving-indicator {
+            position: fixed; bottom: 24px; right: 24px;
+            background: rgba(0,229,255,0.15); border: 1px solid var(--primary);
+            color: var(--primary); padding: 10px 20px; border-radius: 12px;
+            font-size: 14px; font-weight: bold; display: none; z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== AUTH OVERLAY ===== -->
+    <div id="loginOverlay">
+
+        <!-- Panel A: Login -->
+        <div id="panelLogin" class="auth-box">
+            <h1>BME MEDICAL</h1>
+            <h2>Phục Hồi Chức Năng Bàn Tay</h2>
+            <div class="auth-panel">
+                <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+                <input type="password" id="loginPassword" placeholder="Mật khẩu" autocomplete="current-password">
+                <div class="auth-error" id="loginError"></div>
+                <button class="btn" id="btnLogin" onclick="login()">ĐĂNG NHẬP</button>
+                <span class="auth-link" onclick="switchToRegister()">Chưa có tài khoản? Đăng ký ngay</span>
+            </div>
+        </div>
+
+        <!-- Panel B: Register -->
+        <div id="panelRegister" class="auth-box" style="display:none;">
+            <h1>ĐĂNG KÝ</h1>
+            <h2>Tạo tài khoản bệnh nhân</h2>
+            <div class="auth-panel">
+                <input type="text" id="regName" placeholder="Họ và tên" autocomplete="name">
+                <input type="email" id="regEmail" placeholder="Email" autocomplete="email">
+                <input type="password" id="regPassword" placeholder="Mật khẩu (tối thiểu 8 ký tự)">
+                <input type="password" id="regConfirm" placeholder="Xác nhận mật khẩu">
+                <div class="auth-error" id="registerError"></div>
+                <button class="btn" id="btnRegister" onclick="register()">ĐĂNG KÝ</button>
+                <span class="auth-link" onclick="switchToLogin()">Đã có tài khoản? Đăng nhập</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== HISTORY MODAL ===== -->
+    <div id="historyModal">
+        <div class="history-content">
+            <h2 style="color: #4b6cb7; text-align: center; margin-top: 0; font-size: 28px;">LỊCH SỬ PHỤC HỒI CHỨC NĂNG</h2>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Điểm số</th>
+                        <th>Số lần bắt</th>
+                        <th>Góc gập TB</th>
+                        <th>Độ rung TB</th>
+                        <th>Đánh giá lâm sàng</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody"></tbody>
+            </table>
+            <div class="history-actions">
+                <button class="btn" onclick="closeHistory()" style="width: auto;">ĐÓNG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== GAME UI ===== -->
+    <div class="header">LUYỆN TẬP VẬN ĐỘNG BÀN TAY</div>
+
+    <div class="game-wrapper">
+        <video class="input_video"></video>
+
+        <div class="game-area">
+            <div id="handStatusIndicator">ĐANG CHỜ...</div>
+            <canvas class="output_canvas" width="800" height="600"></canvas>
+
+            <div id="resultModal">
+                <h2 style="font-size: 40px;">HOÀN THÀNH!</h2>
+                <div id="statusOutput" style="margin-bottom: 40px; text-align: center;"></div>
+                <button class="btn" onclick="location.reload()" style="max-width: 330px;">🔄 THỰC HIỆN LẠI</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="metric-card" style="border-color: var(--danger);">
+                <div class="metric-label">⏱ Thời gian còn lại</div>
+                <div class="metric-value" id="timerText" style="color: var(--danger);">60s</div>
+            </div>
+
+            <div class="metric-card" style="border-color: #ffd700;">
+                <div class="metric-label">💰 Tổng tiền thu thập</div>
+                <div class="metric-value" id="score" style="color: #ffd700;">0</div>
+            </div>
+
+            <div class="metric-card" style="margin-top: auto; border-color: #888;">
+                <div class="metric-label">👤 Bệnh nhân</div>
+                <div id="displayName" style="font-size: 22px; font-weight: bold; margin-top: 5px;">---</div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="showHistory()" style="font-size: 15px; padding: 12px;">📋 XEM LỊCH SỬ</button>
+            <button class="btn btn-danger" onclick="logout()" style="font-size: 15px; padding: 12px;">🚪 ĐĂNG XUẤT</button>
+        </div>
+    </div>
+
+    <!-- Saving indicator -->
+    <div class="saving-indicator" id="savingIndicator">💾 Đang lưu dữ liệu...</div>
+
+    <script>
+        // =====================================================
+        // SUPABASE INIT
+        // =====================================================
+        const { createClient } = supabase;
+        const SUPABASE_URL     = 'https://lrnzfeljrcmkyxswttgb.supabase.co';
+        const SUPABASE_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxybnpmZWxqcmNta3l4c3d0dGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzI0MzYsImV4cCI6MjA5MDQ0ODQzNn0.XXjT0IQiUnt12wlfeLBUNriIbL1h8khobZ6u_z7xDso';
+        const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+        // =====================================================
+        // STATE
+        // =====================================================
+        const videoElement  = document.querySelector('.input_video');
+        const canvasElement = document.querySelector('.output_canvas');
+        const canvasCtx     = canvasElement.getContext('2d');
+        const handStatusDiv = document.getElementById('handStatusIndicator');
+
+        let score = 0, timeLeft = 60, isPlaying = false;
+        let moneys = [], patientDataLog = [], pathHistory = [], gameTimer = null;
+        let hasOpenedHand = false;
+        let currentUser    = null;   // Supabase User object
+        let patientName    = '';
+        let sessionStartedAt = null; // ISO string
+
+        // =====================================================
+        // SESSION PERSISTENCE — auto-login if session exists
+        // =====================================================
+        (async () => {
+            const { data: { session } } = await db.auth.getSession();
+            if (session && session.user) {
+                currentUser = session.user;
+                patientName = session.user.user_metadata?.full_name || session.user.email;
+                enterGame();
+            }
+        })();
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // =====================================================
+        // AUTH — UI SWITCH
+        // =====================================================
+        function switchToRegister() {
+            document.getElementById('panelLogin').style.display    = 'none';
+            document.getElementById('panelRegister').style.display = 'flex';
+            document.getElementById('registerError').innerText = '';
+        }
+
+        function switchToLogin() {
+            document.getElementById('panelRegister').style.display = 'none';
+            document.getElementById('panelLogin').style.display    = 'flex';
+            document.getElementById('loginError').innerText = '';
+        }
+
+        function setAuthLoading(panel, isLoading) {
+            const btns = document.querySelectorAll(`#${panel} .btn`);
+            btns.forEach(b => b.disabled = isLoading);
+        }
+
+        // =====================================================
+        // AUTH — LOGIN
+        // =====================================================
+        async function login() {
+            const email    = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errEl    = document.getElementById('loginError');
+            errEl.innerText = '';
+
+            if (!email || !password) {
+                errEl.innerText = 'Vui lòng điền đầy đủ email và mật khẩu.';
+                return;
+            }
+
+            setAuthLoading('panelLogin', true);
+            const { data, error } = await db.auth.signInWithPassword({ email, password });
+            setAuthLoading('panelLogin', false);
+
+            if (error) {
+                errEl.innerText = 'Email hoặc mật khẩu không đúng.';
+                return;
+            }
+
+            currentUser = data.user;
+            patientName = data.user.user_metadata?.full_name || email;
+            enterGame();
+        }
+
+        // =====================================================
+        // AUTH — REGISTER
+        // =====================================================
+        async function register() {
+            const fullName = document.getElementById('regName').value.trim();
+            const email    = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm  = document.getElementById('regConfirm').value;
+            const errEl    = document.getElementById('registerError');
+            errEl.innerText = '';
+
+            if (!fullName || !email || !password || !confirm) {
+                errEl.innerText = 'Vui lòng điền đầy đủ tất cả các trường.';
+                return;
+            }
+            if (password !== confirm) {
+                errEl.innerText = 'Mật khẩu xác nhận không khớp.';
+                return;
+            }
+            if (password.length < 8) {
+                errEl.innerText = 'Mật khẩu phải có ít nhất 8 ký tự.';
+                return;
+            }
+
+            setAuthLoading('panelRegister', true);
+            const { data, error } = await db.auth.signUp({
+                email,
+                password,
+                options: { data: { full_name: fullName, role: 'patient' } }
+            });
+            setAuthLoading('panelRegister', false);
+
+            if (error) {
+                errEl.innerText = 'Email đã được dùng hoặc không hợp lệ.';
+                return;
+            }
+
+            // Auto-login after register
+            currentUser = data.user;
+            patientName = fullName;
+            enterGame();
+        }
+
+        // =====================================================
+        // ENTER GAME
+        // =====================================================
+        function enterGame() {
+            document.getElementById('displayName').innerText = patientName;
+            document.getElementById('loginOverlay').style.display = 'none';
+            sessionStartedAt = new Date().toISOString();
+            initCamera();
+        }
+
+        // =====================================================
+        // LOGOUT
+        // =====================================================
+        async function logout() {
+            if (!confirm('Bạn có chắc muốn đăng xuất?')) return;
+            await db.auth.signOut();
+            location.reload();
+        }
+
+        // =====================================================
+        // HISTORY — load from Supabase
+        // =====================================================
+        async function showHistory() {
+            if (!currentUser) return; // Should not happen — button only visible after login
+
+            document.getElementById('historyModal').style.display = 'flex';
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;color:#888;">Đang tải...</td></tr>';
+
+            const { data, error } = await db
+                .from('sessions')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;color:#888;">Chưa có dữ liệu phiên tập nào.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(record => {
+                const diagColor = record.clinical_conclusion?.includes('BẤT THƯỜNG') ? 'var(--danger)' : 'var(--success)';
+                const date = new Date(record.created_at).toLocaleString('vi-VN');
+                const conclusion = record.clinical_conclusion?.replace('PHÁT HIỆN BẤT THƯỜNG: ', '') ?? '-';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${date}</td>
+                        <td style="color:#ffd700;font-family:monospace;font-size:18px;">${record.total_score.toLocaleString()}</td>
+                        <td>${record.total_catches}</td>
+                        <td>${record.avg_angle_deg ?? '-'}°</td>
+                        <td>${record.avg_tremor ?? '-'}</td>
+                        <td style="color:${diagColor};font-weight:bold;">${conclusion}</td>
+                    </tr>`;
+            });
+        }
+
+        function closeHistory() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        // =====================================================
+        // SAVE SESSION → SUPABASE
+        // =====================================================
+        async function saveSession(avgA, avgT, maxT, diagMsg) {
+            if (!currentUser) return;
+
+            document.getElementById('savingIndicator').style.display = 'block';
+
+            const { data: session, error } = await db
+                .from('sessions')
+                .insert({
+                    patient_id:          currentUser.id,
+                    started_at:          sessionStartedAt,
+                    ended_at:            new Date().toISOString(),
+                    total_score:         score,
+                    total_catches:       patientDataLog.length,
+                    avg_angle_deg:       parseFloat(avgA.toFixed(2)),
+                    avg_tremor:          parseFloat(avgT.toFixed(2)),
+                    max_tremor:          parseFloat(maxT.toFixed(2)),
+                    clinical_conclusion: diagMsg
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Failed to save session:', error);
+                document.getElementById('savingIndicator').style.display = 'none';
+                return;
+            }
+
+            // Insert per-catch events (batch)
+            if (patientDataLog.length > 0) {
+                const events = patientDataLog.map(d => ({
+                    session_id:      session.id,
+                    time_offset_sec: d.time,
+                    score_at_moment: d.currentScore,
+                    avg_angle_deg:   parseFloat(parseFloat(d.ang).toFixed(2)),
+                    tremor_value:    parseFloat(parseFloat(d.trem).toFixed(2))
+                }));
+                await db.from('session_events').insert(events);
+            }
+
+            document.getElementById('savingIndicator').style.display = 'none';
+        }
+
+        // =====================================================
+        // GAME LOGIC (unchanged)
+        // =====================================================
+        function playSound(f, d) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.frequency.setValueAtTime(f, audioCtx.currentTime);
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
+            o.start(); o.stop(audioCtx.currentTime + d);
+        }
+
+        function calculateAngle(A, B, C) {
+            const v1 = { x: A.x - B.x, y: A.y - B.y }, v2 = { x: C.x - B.x, y: C.y - B.y };
+            const dot = v1.x * v2.x + v1.y * v2.y;
+            const mag1 = Math.sqrt(v1.x**2 + v1.y**2), mag2 = Math.sqrt(v2.x**2 + v2.y**2);
+            return (Math.acos(dot / (mag1 * mag2)) * 180 / Math.PI).toFixed(1);
+        }
+
+        function onResults(results) {
+            if (!isPlaying) return;
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            let isGrip = false, hx = 0, hy = 0, avgAngle = 0, tremor = 0;
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const lm = results.multiHandLandmarks[0];
+
+                const thumb  = calculateAngle(lm[1],  lm[2],  lm[4]);
+                const index  = calculateAngle(lm[5],  lm[6],  lm[8]);
+                const middle = calculateAngle(lm[9],  lm[10], lm[12]);
+                const ring   = calculateAngle(lm[13], lm[14], lm[16]);
+                const pinky  = calculateAngle(lm[17], lm[18], lm[20]);
+                avgAngle = (parseFloat(thumb) + parseFloat(index) + parseFloat(middle) + parseFloat(ring) + parseFloat(pinky)) / 5;
+
+                if (avgAngle > 150) {
+                    hasOpenedHand = true;
+                    handStatusDiv.innerText = '✋ ĐÃ XÒE 5 NGÓN - SẴN SÀNG BẮT';
+                    handStatusDiv.style.color = '#00e676';
+                }
+
+                isGrip = avgAngle < 100;
+
+                if (!hasOpenedHand) {
+                    handStatusDiv.innerText = '✊ HÃY XÒE CẢ 5 NGÓN TAY';
+                    handStatusDiv.style.color = '#ff1744';
+                }
+
+                let handColor = hasOpenedHand ? (isGrip ? '#ffd700' : '#00e676') : '#ff1744';
+                drawConnectors(canvasCtx, lm, HAND_CONNECTIONS, { color: handColor, lineWidth: 5 });
+                drawLandmarks(canvasCtx, lm, { color: '#ffffff', lineWidth: 1, radius: 2 });
+
+                hx = lm[9].x * canvasElement.width;
+                hy = lm[9].y * canvasElement.height;
+
+                pathHistory.push({ x: hx, y: hy });
+                if (pathHistory.length > 15) pathHistory.shift();
+                if (pathHistory.length === 15) {
+                    let path = 0;
+                    for (let i = 1; i < 15; i++)
+                        path += Math.hypot(pathHistory[i].x - pathHistory[i-1].x, pathHistory[i].y - pathHistory[i-1].y);
+                    tremor = (path - Math.hypot(pathHistory[14].x - pathHistory[0].x, pathHistory[14].y - pathHistory[0].y)).toFixed(1);
+                }
+            }
+
+            if (Math.random() < 0.035) {
+                moneys.push({ x: Math.random() * 700 + 50, y: -50, speed: 3.5 + Math.random() * 2.5 });
+            }
+
+            canvasCtx.scale(-1, 1);
+            canvasCtx.font = '50px Arial';
+            for (let i = moneys.length - 1; i >= 0; i--) {
+                let m = moneys[i]; m.y += m.speed;
+                canvasCtx.fillText('💰', -m.x, m.y);
+
+                if (hx !== 0) {
+                    let dist = Math.hypot(hx - m.x, hy - m.y);
+                    if (dist < 80 && isGrip && hasOpenedHand) {
+                        playSound(880, 0.1);
+                        score += 10000;
+                        document.getElementById('score').innerText = score.toLocaleString();
+                        patientDataLog.push({ time: (60 - timeLeft), ang: avgAngle, trem: tremor, currentScore: score });
+                        moneys.splice(i, 1);
+                        hasOpenedHand = false;
+                        continue;
+                    }
+                }
+                if (m.y > 650) moneys.splice(i, 1);
+            }
+            canvasCtx.restore();
+        }
+
+        function initCamera() {
+            const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.75, minTrackingConfidence: 0.75 });
+            hands.onResults(onResults);
+            const camera = new Camera(videoElement, {
+                onFrame: async () => { await hands.send({ image: videoElement }); },
+                width: 800, height: 600
+            });
+            camera.start().then(() => {
+                isPlaying = true;
+                gameTimer = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('timerText').innerText = timeLeft + 's';
+                    if (timeLeft <= 0) endGame();
+                }, 1000);
+            });
+        }
+
+        // endGame is async to await saveSession
+        async function endGame() {
+            isPlaying = false; clearInterval(gameTimer);
+            playSound(440, 0.5);
+            document.getElementById('resultModal').style.display = 'flex';
+
+            let avgA = 0, avgT = 0, maxT = 0;
+            if (patientDataLog.length > 0) {
+                let sA = 0, sT = 0;
+                patientDataLog.forEach(d => {
+                    sA += parseFloat(d.ang); sT += parseFloat(d.trem);
+                    if (parseFloat(d.trem) > maxT) maxT = parseFloat(d.trem);
+                });
+                avgA = sA / patientDataLog.length;
+                avgT = sT / patientDataLog.length;
+            }
+
+            let issues = [];
+            if (avgA > 95) issues.push('Hạn chế tầm vận động');
+            if (avgT > 12 || maxT > 25) issues.push('Rối loạn kiểm soát cơ (Dấu hiệu run)');
+
+            const diagMsg = issues.length === 0
+                ? 'Bình thường'
+                : 'PHÁT HIỆN BẤT THƯỜNG: ' + issues.join(' | ');
+
+            document.getElementById('statusOutput').innerHTML = issues.length === 0
+                ? `<div class="status-ok">KẾT LUẬN: TAY HOẠT ĐỘNG ỔN ĐỊNH</div>`
+                : `<div class="status-warn">KẾT LUẬN: CẦN CHÚ Ý VẬN ĐỘNG</div>`;
+
+            // Save to Supabase
+            await saveSession(avgA, avgT, maxT, diagMsg);
+        }
+
+        /*
+         * exportCSV() — MOVED TO DOCTOR DASHBOARD
+         * This function has been disabled in the game client.
+         * CSV export and report download are available in the Doctor Dashboard web app
+         * under Patient Detail → Export Report.
+         *
+        function exportCSV(avgA, avgT, maxT, diag) {
+            let csv = "data:text/csv;charset=utf-8,\uFEFF";
+            csv += `BÁO CÁO PHỤC HỒI CHỨC NĂNG\nBệnh nhân: ${patientName}\n\n`;
+            csv += "Thời điểm (Giây),Điểm số,Góc gập trung bình (5 ngón),Độ rung (Tremor)\n";
+            patientDataLog.forEach(d => { csv += `${d.time},${d.currentScore},${d.ang.toFixed(1)},${d.trem}\n`; });
+
+            csv += "\n=== BẢNG TỔNG KẾT VÀ ĐÁNH GIÁ Y KHOA ===,,,\n";
+            csv += `Tổng số lần vận động:,${patientDataLog.length} lần,,\n`;
+            csv += `Góc gập trung bình:,${avgA.toFixed(1)}°,,\n`;
+            csv += `Độ rung tay trung bình:,${avgT.toFixed(1)},,\n`;
+            csv += `Độ rung tay giật mạnh nhất:,${maxT.toFixed(1)},,\n`;
+            csv += ` KẾT LUẬN:,${diag},,\n`;
+
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csv));
+            link.setAttribute("download", `BaoCao_${patientName}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+        */
+    </script>
+</body>
+</html>

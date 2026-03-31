@@ -1,0 +1,56 @@
+# ==============================
+# Dependencies
+# ==============================
+node_modules/
+.pnp/
+.pnp.js
+
+# ==============================
+# Build output
+# ==============================
+dist/
+build/
+*.tsbuildinfo
+
+# ==============================
+# Environment variables
+# ==============================
+.env
+.env.local
+.env.*.local
+
+# ==============================
+# IDE / Editor
+# ==============================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==============================
+# OS files
+# ==============================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ==============================
+# Logs
+# ==============================
+*.log
+npm-debug.log*
+
+# ==============================
+# Documentation / Specs (internal only)
+# Exclude all .md EXCEPT README.md
+# ==============================
+*.md
+!README.md
+
+# ==============================
+# Stitch / Mockup HTML files
+# ==============================
+BME_Dashboard.html
+Session_detail.html
+login.html
