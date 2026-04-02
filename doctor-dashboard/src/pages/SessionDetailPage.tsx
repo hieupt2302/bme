@@ -9,7 +9,7 @@ interface Session {
   clinical_conclusion: string; created_at: string; patient_id: string;
   started_at: string;
 }
-interface Event { id: string; time_offset_s: number; cumulative_score: number; avg_flexion_angle_deg: number; tremor_value: number; }
+interface Event { id: string; time_offset_sec: number; score_at_moment: number; avg_angle_deg: number; tremor_value: number; }
 interface Profile { full_name: string; id: string; }
 
 export default function SessionDetailPage() {
@@ -27,7 +27,7 @@ export default function SessionDetailPage() {
     if (!s) { setLoading(false); return; }
     setSession(s);
     const [eRes, pRes] = await Promise.all([
-      supabase.from('session_events').select('*').eq('session_id', sessionId).order('time_offset_s', { ascending: true }),
+      supabase.from('session_events').select('*').eq('session_id', sessionId).order('time_offset_sec', { ascending: true }),
       supabase.from('profiles').select('full_name, id').eq('id', s.patient_id).single(),
     ]);
     setEvents(eRes.data ?? []);
@@ -38,7 +38,7 @@ export default function SessionDetailPage() {
   function exportCSV() {
     if (!session || events.length === 0) return;
     const h = ['Thời điểm (s)', 'Điểm tích lũy', 'Góc gập TB', 'Độ rung'];
-    const rows = events.map(e => [e.time_offset_s.toFixed(2), e.cumulative_score, e.avg_flexion_angle_deg?.toFixed(1), e.tremor_value?.toFixed(2)]);
+    const rows = events.map(e => [e.time_offset_sec?.toFixed(2), e.score_at_moment, e.avg_angle_deg?.toFixed(1), e.tremor_value?.toFixed(2)]);
     const csv = [h.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -49,9 +49,9 @@ export default function SessionDetailPage() {
   if (!session) return <div className="text-center py-20 text-on-surface-variant">Không tìm thấy phiên tập.</div>;
 
   const normal = session.clinical_conclusion === 'TAY HOẠT ĐỘNG ỔN ĐỊNH';
-  const angleData = events.map(e => ({ t: +e.time_offset_s.toFixed(1), angle: +(e.avg_flexion_angle_deg || 0).toFixed(1) }));
-  const tremorData = events.map(e => ({ t: +e.time_offset_s.toFixed(1), tremor: +(e.tremor_value || 0).toFixed(2) }));
-  const scoreData = events.map((e, i) => ({ catch: i + 1, score: e.cumulative_score }));
+  const angleData = events.map(e => ({ t: +(e.time_offset_sec || 0).toFixed(1), angle: +(e.avg_angle_deg || 0).toFixed(1) }));
+  const tremorData = events.map(e => ({ t: +(e.time_offset_sec || 0).toFixed(1), tremor: +(e.tremor_value || 0).toFixed(2) }));
+  const scoreData = events.map((e, i) => ({ catch: i + 1, score: e.score_at_moment }));
   const visibleEvents = showAllEvents ? events : events.slice(0, 10);
 
   return (
@@ -167,12 +167,12 @@ export default function SessionDetailPage() {
             </tr></thead>
             <tbody className="divide-y divide-outline-variant/10">
               {visibleEvents.map(e => {
-                const warn = (e.avg_flexion_angle_deg || 0) < 95 || (e.tremor_value || 0) > 12;
+                const warn = (e.avg_angle_deg || 0) < 95 || (e.tremor_value || 0) > 12;
                 return (
                   <tr key={e.id} className="hover:bg-surface-bright transition-colors">
-                    <td className="px-6 py-4 font-mono text-primary-fixed">{e.time_offset_s.toFixed(2)}</td>
-                    <td className="px-6 py-4 font-bold">{e.cumulative_score}</td>
-                    <td className={`px-6 py-4 ${(e.avg_flexion_angle_deg || 0) < 95 ? 'text-error' : 'text-tertiary'}`}>{e.avg_flexion_angle_deg?.toFixed(0)}°</td>
+                    <td className="px-6 py-4 font-mono text-primary-fixed">{(e.time_offset_sec || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 font-bold">{e.score_at_moment}</td>
+                    <td className={`px-6 py-4 ${(e.avg_angle_deg || 0) < 95 ? 'text-error' : 'text-tertiary'}`}>{e.avg_angle_deg?.toFixed(0)}°</td>
                     <td className={`px-6 py-4 ${(e.tremor_value || 0) > 12 ? 'text-error' : ''}`}>{e.tremor_value?.toFixed(1)}</td>
                     <td className="px-6 py-4">
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded ${warn ? 'bg-error/10 text-error' : 'bg-tertiary/10 text-tertiary'}`}>
