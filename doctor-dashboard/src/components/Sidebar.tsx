@@ -3,6 +3,8 @@ import { NavLink } from 'react-router-dom';
 const links = [
   { to: '/', icon: 'dashboard', label: 'Tổng quan' },
   { to: '/patients', icon: 'group', label: 'Bệnh nhân' },
+  { to: '/exercises', icon: 'fitness_center', label: 'Thư viện bài tập' },
+  { to: '/treatment-plans', icon: 'assignment', label: 'Phác đồ điều trị' },
 ];
 
 export function Sidebar() {

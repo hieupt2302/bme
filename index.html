@@ -149,6 +149,74 @@
             color: var(--primary); padding: 10px 20px; border-radius: 12px;
             font-size: 14px; font-weight: bold; display: none; z-index: 9999;
         }
+
+        /* ===== NOTIFICATION BADGE ===== */
+        .notif-badge { position: relative; }
+        .notif-badge .badge-count {
+            position: absolute; top: -6px; right: -6px; background: var(--danger);
+            color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ===== EXERCISE PANEL ===== */
+        #exercisePanel {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 1500;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+        .exercise-content {
+            background: var(--panel-bg); padding: 40px; border-radius: 20px;
+            border: 2px solid var(--primary); width: 550px; max-height: 80vh; overflow-y: auto;
+        }
+        .exercise-item {
+            background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px;
+            margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .exercise-item h4 { margin: 0 0 4px 0; font-size: 16px; }
+        .exercise-item p { margin: 0; font-size: 13px; color: #a0aec0; }
+        .exercise-item .vid-btn {
+            background: rgba(0,229,255,0.15); border: 1px solid var(--primary); color: var(--primary);
+            padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold;
+            white-space: nowrap;
+        }
+        .exercise-item .vid-btn:hover { background: rgba(0,229,255,0.3); }
+
+        /* ===== NOTIFICATION MODAL ===== */
+        #notifModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000;
+            justify-content: center; align-items: center;
+        }
+        .notif-content {
+            background: var(--panel-bg); padding: 40px; border-radius: 20px;
+            border: 2px solid #4b6cb7; width: 550px; max-height: 80vh; overflow-y: auto;
+        }
+        .notif-item {
+            background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px;
+            margin-bottom: 10px; border-left: 4px solid var(--primary);
+        }
+        .notif-item.unread { border-left-color: var(--danger); background: rgba(255,23,68,0.05); }
+        .notif-item h4 { margin: 0 0 4px 0; font-size: 15px; }
+        .notif-item p { margin: 0; font-size: 13px; color: #a0aec0; }
+        .notif-item .notif-time { font-size: 11px; color: #5a6a80; margin-top: 6px; }
+
+        /* ===== RECORD VIDEO ===== */
+        .rec-btn { position: relative; overflow: hidden; }
+        .rec-btn.recording { animation: rec-pulse 1.5s infinite; }
+        @keyframes rec-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,23,68,0.4); } 50% { box-shadow: 0 0 20px 8px rgba(255,23,68,0.2); } }
+        #recTimer { font-family: monospace; font-size: 14px; color: var(--danger); margin-top: 4px; text-align: center; display: none; }
+
+        /* ===== VIDEO PREVIEW MODAL ===== */
+        #videoPreviewModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 3000;
+            justify-content: center; align-items: center;
+        }
+        .preview-content {
+            background: var(--panel-bg); padding: 30px; border-radius: 20px;
+            border: 2px solid var(--primary); width: 500px; text-align: center;
+        }
+        .preview-content video { width: 100%; border-radius: 12px; margin: 15px 0; }
     </style>
 </head>
 <body>
@@ -209,6 +277,40 @@
         </div>
     </div>
 
+    <!-- ===== NOTIFICATION MODAL ===== -->
+    <div id="notifModal">
+        <div class="notif-content">
+            <h2 style="color: #4b6cb7; text-align: center; margin-top: 0; font-size: 24px;">🔔 THÔNG BÁO TỪ BÁC SĨ</h2>
+            <div id="notifList"><p style="text-align:center;color:#888;">Đang tải...</p></div>
+            <div style="text-align:center;margin-top:20px;">
+                <button class="btn" onclick="closeNotifModal()" style="width:auto;">ĐÓNG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== EXERCISE PANEL ===== -->
+    <div id="exercisePanel">
+        <div class="exercise-content">
+            <h2 style="color: var(--primary); text-align: center; margin-top: 0; font-size: 24px;">📋 BÀI TẬP HÔM NAY</h2>
+            <div id="exerciseList"><p style="text-align:center;color:#888;">Đang tải...</p></div>
+            <div style="display:flex;gap:12px;justify-content:center;margin-top:24px;">
+                <button class="btn" onclick="closeExercisePanel()" style="width:auto;">🎮 BẮT ĐẦU LUYỆN TẬP</button>
+                <button class="btn btn-secondary" onclick="closeExercisePanel()" style="width:auto;">BỎ QUA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== VIDEO PREVIEW MODAL ===== -->
+    <div id="videoPreviewModal">
+        <div class="preview-content">
+            <h3 style="color: var(--primary); margin-top:0;">📹 Xem lại video tập luyện</h3>
+            <video id="recPreviewVideo" controls></video>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button class="btn" onclick="uploadRecording()" style="width:auto;">💾 LƯU VIDEO</button>
+                <button class="btn btn-danger" onclick="discardRecording()" style="width:auto;">🗑 HỦY</button>
+            </div>
+        </div>
+    </div>
     <!-- ===== GAME UI ===== -->
     <div class="header">LUYỆN TẬP VẬN ĐỘNG BÀN TAY</div>
 
@@ -242,6 +344,10 @@
                 <div id="displayName" style="font-size: 22px; font-weight: bold; margin-top: 5px;">---</div>
             </div>
 
+            <button class="btn btn-secondary notif-badge" onclick="showNotifModal()" style="font-size: 15px; padding: 12px;">🔔 THÔNG BÁO <span class="badge-count" id="notifBadge" style="display:none;">0</span></button>
+            <button class="btn btn-secondary" onclick="showExercisePanel()" style="font-size: 15px; padding: 12px;">📋 BÀI TẬP HÔM NAY</button>
+            <button class="btn rec-btn" id="btnRecord" onclick="toggleRecording()" style="font-size: 15px; padding: 12px; background: linear-gradient(135deg, #ff1744, #d50000);">🔴 QUAY VIDEO TẬP</button>
+            <div id="recTimer">00:00</div>
             <button class="btn btn-secondary" onclick="showHistory()" style="font-size: 15px; padding: 12px;">📋 XEM LỊCH SỬ</button>
             <button class="btn btn-danger" onclick="logout()" style="font-size: 15px; padding: 12px;">🚪 ĐĂNG XUẤT</button>
         </div>
@@ -656,6 +762,171 @@
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
         */
+
+        // =====================================================
+        // NOTIFICATIONS — Load & Display
+        // =====================================================
+        let unreadNotifCount = 0;
+
+        async function loadNotifications() {
+            if (!currentUser) return;
+            const { data, error } = await db.from('notifications').select('*').eq('patient_id', currentUser.id).order('created_at', { ascending: false }).limit(20);
+            if (error || !data) return;
+            unreadNotifCount = data.filter(n => !n.is_read).length;
+            const badge = document.getElementById('notifBadge');
+            if (unreadNotifCount > 0) { badge.style.display = 'flex'; badge.textContent = unreadNotifCount; }
+            else { badge.style.display = 'none'; }
+            return data;
+        }
+
+        async function showNotifModal() {
+            document.getElementById('notifModal').style.display = 'flex';
+            const list = document.getElementById('notifList');
+            list.innerHTML = '<p style="text-align:center;color:#888;">Đang tải...</p>';
+            const data = await loadNotifications();
+            if (!data || data.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;">Chưa có thông báo nào.</p>'; return; }
+            const icons = { video: '▶', reminder: '⏰', message: '✉', exercise: '💪' };
+            list.innerHTML = data.map(n => `
+                <div class="notif-item ${n.is_read ? '' : 'unread'}">
+                    <h4>${icons[n.type] || '📌'} ${n.title}</h4>
+                    ${n.content ? `<p>${n.content}</p>` : ''}
+                    ${n.video_url ? `<p><a href="${n.video_url}" target="_blank" style="color:var(--primary);">▶ Xem video hướng dẫn</a></p>` : ''}
+                    <div class="notif-time">${new Date(n.created_at).toLocaleString('vi-VN')}</div>
+                </div>
+            `).join('');
+            // Mark all as read
+            const unreadIds = data.filter(n => !n.is_read).map(n => n.id);
+            if (unreadIds.length > 0) {
+                await db.from('notifications').update({ is_read: true }).in('id', unreadIds);
+                loadNotifications();
+            }
+        }
+
+        function closeNotifModal() { document.getElementById('notifModal').style.display = 'none'; }
+
+        // =====================================================
+        // EXERCISE PANEL — Show today's exercises
+        // =====================================================
+        async function loadExercises() {
+            if (!currentUser) return [];
+            const { data: plans } = await db.from('treatment_plans').select('id, title, treatment_exercises(id, sets_per_day, exercises(title, description, video_url, difficulty))').eq('patient_id', currentUser.id).eq('status', 'active');
+            if (!plans || plans.length === 0) return [];
+            let allExercises = [];
+            plans.forEach(p => { (p.treatment_exercises || []).forEach(te => { allExercises.push({ ...te.exercises, sets_per_day: te.sets_per_day, plan_title: p.title }); }); });
+            return allExercises;
+        }
+
+        async function showExercisePanel() {
+            document.getElementById('exercisePanel').style.display = 'flex';
+            const list = document.getElementById('exerciseList');
+            list.innerHTML = '<p style="text-align:center;color:#888;">Đang tải...</p>';
+            const exercises = await loadExercises();
+            if (exercises.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;">Chưa có bài tập nào được bác sĩ giao. Hãy liên hệ bác sĩ!</p>'; return; }
+            list.innerHTML = exercises.map(ex => `
+                <div class="exercise-item">
+                    <div>
+                        <h4>${ex.title}</h4>
+                        <p>${ex.description || ''}</p>
+                        <p style="color:var(--primary);font-size:12px;">×${ex.sets_per_day} lần/ngày • ${ex.difficulty}</p>
+                    </div>
+                    ${ex.video_url ? `<button class="vid-btn" onclick="window.open('${ex.video_url}','_blank')">▶ Video</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function closeExercisePanel() { document.getElementById('exercisePanel').style.display = 'none'; }
+
+        // =====================================================
+        // VIDEO RECORDING — Record webcam
+        // =====================================================
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordingBlob = null;
+        let recTimerInterval = null;
+        let recSeconds = 0;
+        const MAX_REC_SECONDS = 180; // 3 minutes max
+
+        function toggleRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') { stopRecording(); }
+            else { startRecording(); }
+        }
+
+        function startRecording() {
+            const stream = videoElement.srcObject;
+            if (!stream) { alert('Camera chưa sẵn sàng!'); return; }
+            recordedChunks = [];
+            recSeconds = 0;
+            try {
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+            } catch(e) {
+                try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); }
+                catch(e2) { alert('Trình duyệt không hỗ trợ quay video.'); return; }
+            }
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                recordingBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                showVideoPreview();
+            };
+            mediaRecorder.start(1000);
+            document.getElementById('btnRecord').classList.add('recording');
+            document.getElementById('btnRecord').innerHTML = '⏹ DỪNG QUAY';
+            document.getElementById('recTimer').style.display = 'block';
+            recTimerInterval = setInterval(() => {
+                recSeconds++;
+                const m = String(Math.floor(recSeconds/60)).padStart(2,'0');
+                const s = String(recSeconds%60).padStart(2,'0');
+                document.getElementById('recTimer').textContent = `${m}:${s}`;
+                if (recSeconds >= MAX_REC_SECONDS) stopRecording();
+            }, 1000);
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+            clearInterval(recTimerInterval);
+            document.getElementById('btnRecord').classList.remove('recording');
+            document.getElementById('btnRecord').innerHTML = '🔴 QUAY VIDEO TẬP';
+            document.getElementById('recTimer').style.display = 'none';
+        }
+
+        function showVideoPreview() {
+            if (!recordingBlob) return;
+            const url = URL.createObjectURL(recordingBlob);
+            document.getElementById('recPreviewVideo').src = url;
+            document.getElementById('videoPreviewModal').style.display = 'flex';
+        }
+
+        async function uploadRecording() {
+            if (!recordingBlob || !currentUser) return;
+            document.getElementById('savingIndicator').style.display = 'block';
+            const fileName = `${currentUser.id}/${Date.now()}.webm`;
+            const { error: uploadErr } = await db.storage.from('exercise-recordings').upload(fileName, recordingBlob, { contentType: 'video/webm' });
+            if (uploadErr) { console.error('Upload failed:', uploadErr); alert('Lưu video thất bại!'); document.getElementById('savingIndicator').style.display = 'none'; return; }
+            await db.from('exercise_recordings').insert({
+                patient_id: currentUser.id, storage_path: fileName,
+                duration_seconds: recSeconds, file_size_bytes: recordingBlob.size,
+            });
+            document.getElementById('savingIndicator').style.display = 'none';
+            document.getElementById('videoPreviewModal').style.display = 'none';
+            recordingBlob = null;
+            alert('✅ Video đã được lưu thành công!');
+        }
+
+        function discardRecording() {
+            recordingBlob = null;
+            document.getElementById('videoPreviewModal').style.display = 'none';
+        }
+
+        // =====================================================
+        // AUTO-LOAD on enter game (override enterGame)
+        // =====================================================
+        const _originalEnterGame = enterGame;
+        enterGame = function() {
+            _originalEnterGame();
+            // Load notifications count
+            loadNotifications();
+            // Show exercise panel if patient has active plans
+            loadExercises().then(exs => { if (exs.length > 0) showExercisePanel(); });
+        };
     </script>
 </body>
 </html>
