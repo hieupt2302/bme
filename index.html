@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Phục Hồi Chức Năng Bàn Tay - BME</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -201,7 +202,7 @@
         .notif-item .notif-time { font-size: 11px; color: #5a6a80; margin-top: 6px; }
 
         /* ===== RECORD VIDEO ===== */
-        .rec-btn { position: relative; overflow: hidden; }
+        .rec-btn { position: relative; }
         .rec-btn.recording { animation: rec-pulse 1.5s infinite; }
         @keyframes rec-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,23,68,0.4); } 50% { box-shadow: 0 0 20px 8px rgba(255,23,68,0.2); } }
         #recTimer { font-family: monospace; font-size: 14px; color: var(--danger); margin-top: 4px; text-align: center; display: none; }
@@ -217,6 +218,98 @@
             border: 2px solid var(--primary); width: 500px; text-align: center;
         }
         .preview-content video { width: 100%; border-radius: 12px; margin: 15px 0; }
+
+        /* ===== SELECTION SCREEN ===== */
+        #selectionScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; z-index: 900; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+        }
+        #selectionScreen h2 {
+            color: var(--primary); margin: 0 0 15px 0;
+            text-transform: uppercase; letter-spacing: 2px; font-size: 26px;
+        }
+        .body-wrapper {
+            position: relative; display: inline-block; height: 65vh; background: transparent;
+        }
+        .body-img { height: 100%; width: auto; display: block; border-radius: 8px; }
+        .joint-dot {
+            position: absolute; width: 24px; height: 24px;
+            background: var(--danger); border-radius: 50%; cursor: pointer;
+            border: 3px solid #ffffff; box-shadow: 0 0 15px var(--danger);
+            animation: joint-pulse 1.5s infinite; transform: translate(-50%, -50%);
+            transition: transform 0.2s;
+        }
+        .joint-dot:hover { transform: translate(-50%, -50%) scale(1.3); }
+        @keyframes joint-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255,23,68,0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255,23,68,0); }
+            100% { box-shadow: 0 0 0 0 rgba(255,23,68,0); }
+        }
+        .selection-bar {
+            display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; justify-content: center;
+        }
+        .selection-bar .btn { width: auto; font-size: 14px; padding: 10px 20px; }
+
+        /* ===== CALIBRATION SCREEN ===== */
+        #calibrationScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; z-index: 900; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+        }
+        #calibrationScreen h2 {
+            color: var(--primary); letter-spacing: 2px; margin: 0 0 10px 0; font-size: 24px;
+        }
+        #calibration-instruction {
+            color: var(--danger); font-size: 20px; font-weight: bold;
+            display: block; margin-top: 10px;
+        }
+        .calibration-preview {
+            position: relative; width: 640px; height: 480px;
+            border: 2px dashed var(--primary); border-radius: 15px;
+            overflow: hidden; margin-top: 20px; background: #111;
+        }
+        #calibrationCanvas {
+            width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1);
+        }
+
+        /* ===== GAME CONTAINER ===== */
+        #gameContainer { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        .game-header-bar {
+            background: rgba(0,86,179,0.9); color: white; padding: 12px 25px;
+            display: flex; justify-content: space-between; align-items: center;
+            width: 1100px; border-radius: 12px 12px 0 0; font-size: 14px; box-sizing: border-box;
+        }
+        .game-header-bar .back-btn {
+            background: linear-gradient(135deg, #ff1744, #d50000);
+            color: white; border: none; padding: 8px 18px; border-radius: 8px;
+            cursor: pointer; font-weight: bold; font-size: 13px;
+        }
+        .game-header-bar .back-btn:hover { opacity: 0.85; }
+
+        /* ===== CUSTOM CONFIRM MODAL ===== */
+        #confirmModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 5000;
+            justify-content: center; align-items: center;
+        }
+        .confirm-box {
+            background: var(--panel-bg); padding: 35px 40px; border-radius: 20px;
+            border: 2px solid var(--primary); text-align: center;
+            box-shadow: 0 0 50px rgba(0,229,255,0.2); max-width: 420px;
+            animation: confirmFadeIn 0.25s ease;
+        }
+        @keyframes confirmFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .confirm-box .confirm-icon { font-size: 48px; margin-bottom: 12px; }
+        .confirm-box h3 { color: white; margin: 0 0 8px 0; font-size: 22px; }
+        .confirm-box p { color: #a0aec0; margin: 0 0 24px 0; font-size: 15px; }
+        .confirm-actions { display: flex; gap: 12px; justify-content: center; }
+        .confirm-actions .btn { width: auto; min-width: 140px; font-size: 15px; padding: 12px 24px; }
     </style>
 </head>
 <body>
@@ -252,6 +345,56 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- ===== SELECTION SCREEN ===== -->
+    <div id="selectionScreen">
+        <h2>CHỌN KHỚP CẦN LUYỆN TẬP</h2>
+        <div class="body-wrapper">
+            <img src="skeleton.png" class="body-img" alt="Mô hình giải phẫu">
+            <div class="joint-dot" style="top:23%;left:39%;" onclick="alert('Khớp Vai - Chức năng đang cập nhật')" title="Khớp Vai"></div>
+            <div class="joint-dot" style="top:23%;left:61%;" onclick="alert('Khớp Vai - Chức năng đang cập nhật')" title="Khớp Vai"></div>
+            <div class="joint-dot" style="top:39%;left:32%;" onclick="alert('Khuỷu Tay - Chức năng đang cập nhật')" title="Khuỷu Tay"></div>
+            <div class="joint-dot" style="top:39%;left:66.5%;" onclick="alert('Khuỷu Tay - Chức năng đang cập nhật')" title="Khuỷu Tay"></div>
+            <div class="joint-dot" style="top:53%;left:26%;" onclick="startHandGame()" title="Bàn Tay - Bắt đầu bài tập"></div>
+            <div class="joint-dot" style="top:53%;left:72%;" onclick="startHandGame()" title="Bàn Tay - Bắt đầu bài tập"></div>
+            <div class="joint-dot" style="top:69%;left:41.5%;" onclick="alert('Khớp Gối - Chức năng đang cập nhật')" title="Khớp Gối"></div>
+            <div class="joint-dot" style="top:69%;left:58.5%;" onclick="alert('Khớp Gối - Chức năng đang cập nhật')" title="Khớp Gối"></div>
+            <div class="joint-dot" style="top:89%;left:42.5%;" onclick="alert('Bàn Chân - Chức năng đang cập nhật')" title="Bàn Chân"></div>
+            <div class="joint-dot" style="top:89%;left:57.5%;" onclick="alert('Bàn Chân - Chức năng đang cập nhật')" title="Bàn Chân"></div>
+        </div>
+        <div class="selection-bar">
+            <button class="btn btn-secondary notif-badge" onclick="showNotifModal()" style="font-size:14px;">🔔 THÔNG BÁO <span class="badge-count" id="notifBadge2" style="display:none;">0</span></button>
+            <button class="btn btn-secondary" onclick="showExercisePanel()">📋 BÀI TẬP HÔM NAY</button>
+            <button class="btn btn-secondary" onclick="showHistory()">📋 XEM LỊCH SỬ</button>
+            <button class="btn btn-danger" onclick="logout()">🚪 ĐĂNG XUẤT</button>
+        </div>
+    </div>
+
+    <!-- ===== CALIBRATION SCREEN ===== -->
+    <div id="calibrationScreen">
+        <h2>HIỆU CHUẨN KHOẢNG CÁCH</h2>
+        <p style="font-size:16px;text-align:center;max-width:600px;color:#a0aec0;margin:0;">
+            Hệ thống cần xác định vị trí không gian để đánh giá vận động.<br>
+            <strong id="calibration-instruction">Hãy đưa tay vào khung hình.</strong>
+        </p>
+        <div class="calibration-preview">
+            <canvas id="calibrationCanvas"></canvas>
+        </div>
+        <button class="btn btn-danger" style="margin-top:25px;width:auto;padding:12px 30px;" onclick="cancelCalibration()">HỦY BÀI TẬP</button>
+    </div>
+
+    <!-- ===== CUSTOM CONFIRM MODAL ===== -->
+    <div id="confirmModal">
+        <div class="confirm-box">
+            <div class="confirm-icon" id="confirmIcon">⚠️</div>
+            <h3 id="confirmTitle">Xác nhận</h3>
+            <p id="confirmMessage">Bạn có chắc chắn?</p>
+            <div class="confirm-actions">
+                <button class="btn btn-danger" id="confirmYes">XÁC NHẬN</button>
+                <button class="btn btn-secondary" id="confirmNo">HỦY BỎ</button>
+            </div>
+        </div>
     </div>
 
     <!-- ===== HISTORY MODAL ===== -->
@@ -312,8 +455,12 @@
         </div>
     </div>
     <!-- ===== GAME UI ===== -->
-    <div class="header">LUYỆN TẬP VẬN ĐỘNG BÀN TAY</div>
+    <div id="gameContainer">
 
+    <div class="game-header-bar">
+        <span><strong>HƯỚNG DẪN:</strong> Thực hiện động tác MỞ TAY sau đó NẮM LẠI để thu thập mục tiêu.</span>
+        <button class="back-btn" onclick="stopGameEarly()">KẾT THÚC BÀI TẬP</button>
+    </div>
     <div class="game-wrapper">
         <video class="input_video"></video>
 
@@ -324,7 +471,10 @@
             <div id="resultModal">
                 <h2 style="font-size: 40px;">HOÀN THÀNH!</h2>
                 <div id="statusOutput" style="margin-bottom: 40px; text-align: center;"></div>
-                <button class="btn" onclick="location.reload()" style="max-width: 330px;">🔄 THỰC HIỆN LẠI</button>
+                <div style="display:flex;gap:15px;flex-wrap:wrap;justify-content:center;">
+                    <button class="btn" onclick="restartGame()" style="max-width:280px;">🔄 THỰC HIỆN LẠI</button>
+                    <button class="btn btn-secondary" onclick="backToSelection()" style="max-width:280px;">🔙 QUAY LẠI CHỌN KHỚP</button>
+                </div>
             </div>
         </div>
 
@@ -352,6 +502,7 @@
             <button class="btn btn-danger" onclick="logout()" style="font-size: 15px; padding: 12px;">🚪 ĐĂNG XUẤT</button>
         </div>
     </div>
+    </div> <!-- /gameContainer -->
 
     <!-- Saving indicator -->
     <div class="saving-indicator" id="savingIndicator">💾 Đang lưu dữ liệu...</div>
@@ -369,16 +520,32 @@
         // STATE
         // =====================================================
         const videoElement  = document.querySelector('.input_video');
-        const canvasElement = document.querySelector('.output_canvas');
-        const canvasCtx     = canvasElement.getContext('2d');
+        const gameCanvas    = document.querySelector('.output_canvas');
+        const gameCtx       = gameCanvas.getContext('2d');
         const handStatusDiv = document.getElementById('handStatusIndicator');
 
-        let score = 0, timeLeft = 60, isPlaying = false;
-        let moneys = [], patientDataLog = [], pathHistory = [], gameTimer = null;
-        let hasOpenedHand = false;
-        let currentUser    = null;   // Supabase User object
+        // Calibration canvas
+        let calibrationCanvas, calibCtx;
+        document.addEventListener('DOMContentLoaded', () => {
+            calibrationCanvas = document.getElementById('calibrationCanvas');
+            if (calibrationCanvas) calibCtx = calibrationCanvas.getContext('2d');
+        });
+
+        // Game state
+        let score = 0, timeLeft = 60;
+        let isGameRunning = false, isCalibrating = false;
+        let fallingBags = [], patientDataLog = [], pathHistory = [];
+        let gameTimerInterval = null, spawnIntervalId = null;
+        let wasClosedInPreviousFrame = false;
+        let currentFrameAngle = 0, currentFrameTremor = 0;
+
+        // Camera
+        let camera = null;
+
+        // User
+        let currentUser    = null;
         let patientName    = '';
-        let sessionStartedAt = null; // ISO string
+        let sessionStartedAt = null;
 
         // =====================================================
         // SESSION PERSISTENCE — auto-login if session exists
@@ -392,7 +559,7 @@
             }
         })();
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioCtx;
 
         // =====================================================
         // AUTH — UI SWITCH
@@ -486,20 +653,125 @@
         }
 
         // =====================================================
-        // ENTER GAME
+        // ENTER GAME → Show Selection Screen
         // =====================================================
         function enterGame() {
             document.getElementById('displayName').innerText = patientName;
             document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('selectionScreen').style.display = 'flex';
+            document.getElementById('calibrationScreen').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'none';
+        }
+
+        // =====================================================
+        // SCREEN NAVIGATION
+        // =====================================================
+        function startHandGame() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            document.getElementById('selectionScreen').style.display = 'none';
+            document.getElementById('calibrationScreen').style.display = 'flex';
+            isCalibrating = true;
+            isGameRunning = false;
+            document.getElementById('calibration-instruction').innerText = 'Hãy để tay cách xa màn hình trong khoảng 20 đến 30 cm.';
+            document.getElementById('calibration-instruction').style.color = 'var(--danger)';
+            if (!camera) {
+                camera = new Camera(videoElement, {
+                    onFrame: async () => {
+                        if (isGameRunning || isCalibrating) await hands.send({ image: videoElement });
+                    },
+                    width: 1280, height: 720
+                });
+            }
+            camera.start();
+        }
+
+        function beginActualGame() {
+            isCalibrating = false;
+            isGameRunning = true;
+            document.getElementById('calibrationScreen').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'flex';
+            score = 0;
+            timeLeft = 60;
+            fallingBags = [];
+            patientDataLog = [];
+            pathHistory = [];
+            wasClosedInPreviousFrame = false;
             sessionStartedAt = new Date().toISOString();
-            initCamera();
+            document.getElementById('score').innerText = '0';
+            document.getElementById('timerText').innerText = '60s';
+            document.getElementById('resultModal').style.display = 'none';
+            handStatusDiv.innerText = 'Đang phân tích vận động...';
+            handStatusDiv.style.color = 'var(--primary)';
+            clearInterval(spawnIntervalId);
+            spawnIntervalId = setInterval(spawnMoney, 2000);
+            clearInterval(gameTimerInterval);
+            gameTimerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerText').innerText = timeLeft + 's';
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function spawnMoney() {
+            if (fallingBags.length < 3 && isGameRunning) {
+                fallingBags.push({ x: Math.random() * 0.7 + 0.15, y: -0.1, speed: Math.random() * 0.005 + 0.003 });
+            }
+        }
+
+        function cancelCalibration() {
+            isCalibrating = false;
+            if (camera) camera.stop();
+            if (window.calibrationTimer) { clearTimeout(window.calibrationTimer); window.calibrationTimer = null; }
+            document.getElementById('calibrationScreen').style.display = 'none';
+            document.getElementById('selectionScreen').style.display = 'flex';
+        }
+
+        function showConfirmDialog(icon, title, message) {
+            return new Promise(resolve => {
+                document.getElementById('confirmIcon').textContent = icon;
+                document.getElementById('confirmTitle').textContent = title;
+                document.getElementById('confirmMessage').textContent = message;
+                document.getElementById('confirmModal').style.display = 'flex';
+                document.getElementById('confirmYes').onclick = () => {
+                    document.getElementById('confirmModal').style.display = 'none';
+                    resolve(true);
+                };
+                document.getElementById('confirmNo').onclick = () => {
+                    document.getElementById('confirmModal').style.display = 'none';
+                    resolve(false);
+                };
+            });
+        }
+
+        async function stopGameEarly() {
+            const ok = await showConfirmDialog('⚠️', 'Kết thúc bài tập?', 'Dữ liệu phiên tập hiện tại sẽ không được lưu.');
+            if (!ok) return;
+            isGameRunning = false;
+            clearInterval(gameTimerInterval);
+            clearInterval(spawnIntervalId);
+            if (camera) camera.stop();
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('selectionScreen').style.display = 'flex';
+        }
+
+        function backToSelection() {
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('resultModal').style.display = 'none';
+            document.getElementById('selectionScreen').style.display = 'flex';
+        }
+
+        function restartGame() {
+            document.getElementById('resultModal').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'none';
+            startHandGame();
         }
 
         // =====================================================
         // LOGOUT
         // =====================================================
         async function logout() {
-            if (!confirm('Bạn có chắc muốn đăng xuất?')) return;
+            const ok = await showConfirmDialog('🚪', 'Đăng xuất?', 'Bạn có chắc muốn đăng xuất khỏi hệ thống?');
+            if (!ok) return;
             await db.auth.signOut();
             location.reload();
         }
@@ -591,19 +863,25 @@
         }
 
         // =====================================================
-        // GAME LOGIC (unchanged)
+        // SOUND
         // =====================================================
-        function playSound(f, d) {
+        function playCoinSound() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const o = audioCtx.createOscillator();
             const g = audioCtx.createGain();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(1046.50, audioCtx.currentTime);
+            o.frequency.exponentialRampToValueAtTime(2093.00, audioCtx.currentTime + 0.1);
+            g.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
             o.connect(g); g.connect(audioCtx.destination);
-            o.frequency.setValueAtTime(f, audioCtx.currentTime);
-            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
-            o.start(); o.stop(audioCtx.currentTime + d);
+            o.start(); o.stop(audioCtx.currentTime + 0.3);
         }
 
+        // =====================================================
+        // MEDICAL TRACKING — Angle calculation (Phương án B)
+        // =====================================================
         function calculateAngle(A, B, C) {
             const v1 = { x: A.x - B.x, y: A.y - B.y }, v2 = { x: C.x - B.x, y: C.y - B.y };
             const dot = v1.x * v2.x + v1.y * v2.y;
@@ -611,103 +889,169 @@
             return (Math.acos(dot / (mag1 * mag2)) * 180 / Math.PI).toFixed(1);
         }
 
+        // =====================================================
+        // onResults — Dual mode: Calibration + Game
+        // =====================================================
         function onResults(results) {
-            if (!isPlaying) return;
-            canvasCtx.save();
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            // ---- MODE 1: CALIBRATION ----
+            if (isCalibrating) {
+                if (!calibrationCanvas || !calibCtx) return;
+                calibrationCanvas.width = videoElement.videoWidth;
+                calibrationCanvas.height = videoElement.videoHeight;
+                calibCtx.save();
+                calibCtx.clearRect(0, 0, calibrationCanvas.width, calibrationCanvas.height);
+                calibCtx.drawImage(results.image, 0, 0, calibrationCanvas.width, calibrationCanvas.height);
 
-            let isGrip = false, hx = 0, hy = 0, avgAngle = 0, tremor = 0;
+                const instructionEl = document.getElementById('calibration-instruction');
 
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    const landmarks = results.multiHandLandmarks[0];
+                    drawConnectors(calibCtx, landmarks, HAND_CONNECTIONS, {color: '#00e5ff', lineWidth: 4});
+
+                    const vectorX = landmarks[0].x - landmarks[12].x;
+                    const vectorY = landmarks[0].y - landmarks[12].y;
+                    const handSizeRatio = Math.hypot(vectorX, vectorY);
+
+                    const MIN_RATIO = 0.605;
+                    const MAX_RATIO = 0.750;
+
+                    if (handSizeRatio < MIN_RATIO) {
+                        instructionEl.innerText = 'Tay đang QUÁ XA. Hãy để tay cách màn hình khoảng 20 - 30 cm.';
+                        instructionEl.style.color = '#ff9800';
+                        if (window.calibrationTimer) { clearTimeout(window.calibrationTimer); window.calibrationTimer = null; }
+                    } else if (handSizeRatio > MAX_RATIO) {
+                        instructionEl.innerText = 'Tay đang QUÁ GẦN. Hãy để tay cách màn hình khoảng 20 - 30 cm.';
+                        instructionEl.style.color = '#ff9800';
+                        if (window.calibrationTimer) { clearTimeout(window.calibrationTimer); window.calibrationTimer = null; }
+                    } else {
+                        instructionEl.innerText = 'Khoảng cách đạt chuẩn. Hãy giữ yên tay, đang nạp bài tập...';
+                        instructionEl.style.color = '#4caf50';
+                        if (!window.calibrationTimer) {
+                            window.calibrationTimer = setTimeout(() => {
+                                if (isCalibrating) beginActualGame();
+                                window.calibrationTimer = null;
+                            }, 1500);
+                        }
+                    }
+                } else {
+                    instructionEl.innerText = 'Chưa nhận diện được bàn tay. Hãy đưa tay vào khung hình.';
+                    instructionEl.style.color = 'var(--danger)';
+                    if (window.calibrationTimer) { clearTimeout(window.calibrationTimer); window.calibrationTimer = null; }
+                }
+                calibCtx.restore();
+                return;
+            }
+
+            // ---- MODE 2: GAME ----
+            if (!isGameRunning) return;
+
+            gameCanvas.width = videoElement.videoWidth;
+            gameCanvas.height = videoElement.videoHeight;
+            gameCtx.save();
+            gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            gameCtx.drawImage(results.image, 0, 0, gameCanvas.width, gameCanvas.height);
+
+            // Draw falling bags (normalized coords)
+            gameCtx.font = '65px Arial';
+            fallingBags.forEach((bag, index) => {
+                bag.y += bag.speed;
+                const drawX = bag.x * gameCanvas.width;
+                const drawY = bag.y * gameCanvas.height;
+                gameCtx.fillText('💰', drawX, drawY);
+                if (bag.y > 1.1) fallingBags.splice(index, 1);
+            });
+
+            // Analyze hand
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const lm = results.multiHandLandmarks[0];
 
+                // Draw hand skeleton
+                drawConnectors(gameCtx, lm, HAND_CONNECTIONS, { color: '#00e5ff', lineWidth: 5 });
+                drawLandmarks(gameCtx, lm, { color: '#ffffff', lineWidth: 1, radius: 2 });
+
+                // === Medical tracking (Phương án B) ===
                 const thumb  = calculateAngle(lm[1],  lm[2],  lm[4]);
-                const index  = calculateAngle(lm[5],  lm[6],  lm[8]);
+                const idx    = calculateAngle(lm[5],  lm[6],  lm[8]);
                 const middle = calculateAngle(lm[9],  lm[10], lm[12]);
                 const ring   = calculateAngle(lm[13], lm[14], lm[16]);
                 const pinky  = calculateAngle(lm[17], lm[18], lm[20]);
-                avgAngle = (parseFloat(thumb) + parseFloat(index) + parseFloat(middle) + parseFloat(ring) + parseFloat(pinky)) / 5;
+                currentFrameAngle = (parseFloat(thumb) + parseFloat(idx) + parseFloat(middle) + parseFloat(ring) + parseFloat(pinky)) / 5;
 
-                if (avgAngle > 150) {
-                    hasOpenedHand = true;
-                    handStatusDiv.innerText = '✋ ĐÃ XÒE 5 NGÓN - SẴN SÀNG BẮT';
-                    handStatusDiv.style.color = '#00e676';
-                }
-
-                isGrip = avgAngle < 100;
-
-                if (!hasOpenedHand) {
-                    handStatusDiv.innerText = '✊ HÃY XÒE CẢ 5 NGÓN TAY';
-                    handStatusDiv.style.color = '#ff1744';
-                }
-
-                let handColor = hasOpenedHand ? (isGrip ? '#ffd700' : '#00e676') : '#ff1744';
-                drawConnectors(canvasCtx, lm, HAND_CONNECTIONS, { color: handColor, lineWidth: 5 });
-                drawLandmarks(canvasCtx, lm, { color: '#ffffff', lineWidth: 1, radius: 2 });
-
-                hx = lm[9].x * canvasElement.width;
-                hy = lm[9].y * canvasElement.height;
-
+                // Tremor tracking
+                const hx = lm[9].x * gameCanvas.width;
+                const hy = lm[9].y * gameCanvas.height;
                 pathHistory.push({ x: hx, y: hy });
                 if (pathHistory.length > 15) pathHistory.shift();
+                currentFrameTremor = 0;
                 if (pathHistory.length === 15) {
-                    let path = 0;
+                    let p = 0;
                     for (let i = 1; i < 15; i++)
-                        path += Math.hypot(pathHistory[i].x - pathHistory[i-1].x, pathHistory[i].y - pathHistory[i-1].y);
-                    tremor = (path - Math.hypot(pathHistory[14].x - pathHistory[0].x, pathHistory[14].y - pathHistory[0].y)).toFixed(1);
+                        p += Math.hypot(pathHistory[i].x - pathHistory[i-1].x, pathHistory[i].y - pathHistory[i-1].y);
+                    currentFrameTremor = parseFloat((p - Math.hypot(pathHistory[14].x - pathHistory[0].x, pathHistory[14].y - pathHistory[0].y)).toFixed(1));
                 }
-            }
 
-            if (Math.random() < 0.035) {
-                moneys.push({ x: Math.random() * 700 + 50, y: -50, speed: 3.5 + Math.random() * 2.5 });
-            }
+                // === Game catching logic (new_update.html) ===
+                const fingerX = lm[8].x;
+                const fingerY = lm[8].y;
+                const isNowClosed = lm[8].y > lm[5].y;
+                const justGrabbedAction = isNowClosed && !wasClosedInPreviousFrame;
+                let touchingAnyBag = false;
 
-            canvasCtx.scale(-1, 1);
-            canvasCtx.font = '50px Arial';
-            for (let i = moneys.length - 1; i >= 0; i--) {
-                let m = moneys[i]; m.y += m.speed;
-                canvasCtx.fillText('💰', -m.x, m.y);
+                fallingBags.forEach((bag, index) => {
+                    const dist = Math.hypot(fingerX - bag.x, fingerY - bag.y);
+                    if (dist < 0.1) {
+                        touchingAnyBag = true;
+                        if (justGrabbedAction) {
+                            fallingBags.splice(index, 1);
+                            score += 100;
+                            document.getElementById('score').innerText = score.toLocaleString();
+                            playCoinSound();
+                            patientDataLog.push({ time: (60 - timeLeft), ang: currentFrameAngle, trem: currentFrameTremor, currentScore: score });
+                            handStatusDiv.innerText = '✅ CHÍNH XÁC!';
+                            handStatusDiv.style.color = '#00e676';
+                        } else if (isNowClosed && !justGrabbedAction) {
+                            handStatusDiv.innerText = '❌ YÊU CẦU MỞ TAY';
+                            handStatusDiv.style.color = '#ff1744';
+                        } else if (!isNowClosed) {
+                            handStatusDiv.innerText = '✊ NẮM LẠI ĐỂ THU THẬP';
+                            handStatusDiv.style.color = '#ff8c00';
+                        }
+                    }
+                });
 
-                if (hx !== 0) {
-                    let dist = Math.hypot(hx - m.x, hy - m.y);
-                    if (dist < 80 && isGrip && hasOpenedHand) {
-                        playSound(880, 0.1);
-                        score += 10000;
-                        document.getElementById('score').innerText = score.toLocaleString();
-                        patientDataLog.push({ time: (60 - timeLeft), ang: avgAngle, trem: tremor, currentScore: score });
-                        moneys.splice(i, 1);
-                        hasOpenedHand = false;
-                        continue;
+                if (!touchingAnyBag) {
+                    if (isNowClosed) {
+                        handStatusDiv.innerText = 'HÃY MỞ TAY VÀ DI CHUYỂN';
+                        handStatusDiv.style.color = '#888';
+                    } else {
+                        handStatusDiv.innerText = '✋ SẴN SÀNG...';
+                        handStatusDiv.style.color = '#00e676';
                     }
                 }
-                if (m.y > 650) moneys.splice(i, 1);
+                wasClosedInPreviousFrame = isNowClosed;
+            } else {
+                handStatusDiv.innerText = 'CHƯA NHẬN DIỆN ĐƯỢC TAY';
+                handStatusDiv.style.color = '#ff1744';
             }
-            canvasCtx.restore();
+            gameCtx.restore();
         }
 
-        function initCamera() {
-            const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.75, minTrackingConfidence: 0.75 });
-            hands.onResults(onResults);
-            const camera = new Camera(videoElement, {
-                onFrame: async () => { await hands.send({ image: videoElement }); },
-                width: 800, height: 600
-            });
-            camera.start().then(() => {
-                isPlaying = true;
-                gameTimer = setInterval(() => {
-                    timeLeft--;
-                    document.getElementById('timerText').innerText = timeLeft + 's';
-                    if (timeLeft <= 0) endGame();
-                }, 1000);
-            });
-        }
+        // =====================================================
+        // HANDS — Global initialization
+        // =====================================================
+        const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+        hands.onResults(onResults);
 
-        // endGame is async to await saveSession
+        // =====================================================
+        // endGame — async to await saveSession
+        // =====================================================
         async function endGame() {
-            isPlaying = false; clearInterval(gameTimer);
-            playSound(440, 0.5);
+            isGameRunning = false;
+            clearInterval(gameTimerInterval);
+            clearInterval(spawnIntervalId);
+            if (camera) camera.stop();
+
             document.getElementById('resultModal').style.display = 'flex';
 
             let avgA = 0, avgT = 0, maxT = 0;
@@ -733,35 +1077,8 @@
                 ? `<div class="status-ok">KẾT LUẬN: TAY HOẠT ĐỘNG ỔN ĐỊNH</div>`
                 : `<div class="status-warn">KẾT LUẬN: CẦN CHÚ Ý VẬN ĐỘNG</div>`;
 
-            // Save to Supabase
             await saveSession(avgA, avgT, maxT, diagMsg);
         }
-
-        /*
-         * exportCSV() — MOVED TO DOCTOR DASHBOARD
-         * This function has been disabled in the game client.
-         * CSV export and report download are available in the Doctor Dashboard web app
-         * under Patient Detail → Export Report.
-         *
-        function exportCSV(avgA, avgT, maxT, diag) {
-            let csv = "data:text/csv;charset=utf-8,\uFEFF";
-            csv += `BÁO CÁO PHỤC HỒI CHỨC NĂNG\nBệnh nhân: ${patientName}\n\n`;
-            csv += "Thời điểm (Giây),Điểm số,Góc gập trung bình (5 ngón),Độ rung (Tremor)\n";
-            patientDataLog.forEach(d => { csv += `${d.time},${d.currentScore},${d.ang.toFixed(1)},${d.trem}\n`; });
-
-            csv += "\n=== BẢNG TỔNG KẾT VÀ ĐÁNH GIÁ Y KHOA ===,,,\n";
-            csv += `Tổng số lần vận động:,${patientDataLog.length} lần,,\n`;
-            csv += `Góc gập trung bình:,${avgA.toFixed(1)}°,,\n`;
-            csv += `Độ rung tay trung bình:,${avgT.toFixed(1)},,\n`;
-            csv += `Độ rung tay giật mạnh nhất:,${maxT.toFixed(1)},,\n`;
-            csv += ` KẾT LUẬN:,${diag},,\n`;
-
-            const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csv));
-            link.setAttribute("download", `BaoCao_${patientName}.csv`);
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        }
-        */
 
         // =====================================================
         // NOTIFICATIONS — Load & Display
@@ -773,9 +1090,13 @@
             const { data, error } = await db.from('notifications').select('*').eq('patient_id', currentUser.id).order('created_at', { ascending: false }).limit(20);
             if (error || !data) return;
             unreadNotifCount = data.filter(n => !n.is_read).length;
-            const badge = document.getElementById('notifBadge');
-            if (unreadNotifCount > 0) { badge.style.display = 'flex'; badge.textContent = unreadNotifCount; }
-            else { badge.style.display = 'none'; }
+            // Sync both badges (game sidebar + selection screen)
+            ['notifBadge', 'notifBadge2'].forEach(id => {
+                const badge = document.getElementById(id);
+                if (!badge) return;
+                if (unreadNotifCount > 0) { badge.style.display = 'flex'; badge.textContent = unreadNotifCount; }
+                else { badge.style.display = 'none'; }
+            });
             return data;
         }
 
@@ -922,10 +1243,7 @@
         const _originalEnterGame = enterGame;
         enterGame = function() {
             _originalEnterGame();
-            // Load notifications count
             loadNotifications();
-            // Show exercise panel if patient has active plans
-            loadExercises().then(exs => { if (exs.length > 0) showExercisePanel(); });
         };
     </script>
 </body>
