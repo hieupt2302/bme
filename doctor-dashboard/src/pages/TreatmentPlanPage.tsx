@@ -135,7 +135,7 @@ export default function TreatmentPlanPage() {
     // Send notification to patient
     const { error: notifError } = await supabase.from('notifications').insert({
       patient_id: form.patient_id, doctor_id: user!.id, type: 'exercise',
-      title: 'Phác đồ điều trị mới', content: 'Bác sĩ đã tạo phác đồ "${form.title}" cho bạn. Hãy kiểm tra bài tập hôm nay!',
+      title: 'Phác đồ điều trị mới', content: `Bác sĩ đã tạo phác đồ "${form.title}" cho bạn. Hãy kiểm tra bài tập hôm nay!`,
     });
     if (notifError) console.error('Create notification error:', notifError);
 
