@@ -54,18 +54,41 @@ export default function TreatmentPlanPage() {
   const [form, setForm] = useState({ patient_id: '', title: '', notes: '', start_date: new Date().toISOString().split('T')[0], end_date: '' });
   const [planExercises, setPlanExercises] = useState<PlanExerciseForm[]>([]);
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [user]);
 
   async function fetchAll() {
-    const [plansRes, patientsRes, exRes] = await Promise.all([
-      supabase.from('treatment_plans').select('*, profiles!treatment_plans_patient_id_fkey(full_name), treatment_exercises(id, exercise_id, order_index, sets_per_day, exercises(title, difficulty))').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('id, full_name').eq('role', 'patient').order('full_name'),
-      supabase.from('exercises').select('id, title, difficulty, duration_seconds').order('title'),
-    ]);
-    setPlans((plansRes.data as Plan[]) ?? []);
-    setPatients(patientsRes.data ?? []);
-    setExercises(exRes.data ?? []);
-    setLoading(false);
+    try {
+      if (!user?.id) {
+        console.warn('User not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      const plansRes = await supabase.from('treatment_plans')
+        .select('*, treatment_exercises(id, exercise_id, order_index, sets_per_day, notes, exercises(title, difficulty))')
+        .eq('doctor_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      console.log('Plans response:', plansRes);
+      
+      if (plansRes.error) {
+        console.error('Plans fetch error:', plansRes.error);
+      }
+
+      const patientsRes = await supabase.from('profiles').select('id, full_name').eq('role', 'patient').order('full_name');
+      if (patientsRes.error) console.error('Patients fetch error:', patientsRes.error);
+
+      const exRes = await supabase.from('exercises').select('id, title, difficulty, duration_seconds').order('title');
+      if (exRes.error) console.error('Exercises fetch error:', exRes.error);
+      
+      setPlans((plansRes.data as Plan[]) ?? []);
+      setPatients(patientsRes.data ?? []);
+      setExercises(exRes.data ?? []);
+      setLoading(false);
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setLoading(false);
+    }
   }
 
   function openCreate() {
@@ -96,27 +119,33 @@ export default function TreatmentPlanPage() {
       start_date: form.start_date, end_date: form.end_date || null,
     }).select().single();
 
-    if (error || !plan) { console.error(error); return; }
+    if (error || !plan) { 
+      console.error('Create plan error:', error); 
+      return; 
+    }
 
     if (planExercises.length > 0) {
       const rows = planExercises.map((pe, i) => ({
         plan_id: plan.id, exercise_id: pe.exercise_id, order_index: i, sets_per_day: pe.sets_per_day, notes: pe.notes || null,
       }));
-      await supabase.from('treatment_exercises').insert(rows);
+      const { error: exError } = await supabase.from('treatment_exercises').insert(rows);
+      if (exError) console.error('Create exercises error:', exError);
     }
 
     // Send notification to patient
-    await supabase.from('notifications').insert({
+    const { error: notifError } = await supabase.from('notifications').insert({
       patient_id: form.patient_id, doctor_id: user!.id, type: 'exercise',
-      title: 'Phác đồ điều trị mới', content: `Bác sĩ đã tạo phác đồ "${form.title}" cho bạn. Hãy kiểm tra bài tập hôm nay!`,
+      title: 'Phác đồ điều trị mới', content: 'Bác sĩ đã tạo phác đồ "${form.title}" cho bạn. Hãy kiểm tra bài tập hôm nay!',
     });
+    if (notifError) console.error('Create notification error:', notifError);
 
     setShowModal(false);
     fetchAll();
   }
 
   async function updateStatus(planId: string, newStatus: string) {
-    await supabase.from('treatment_plans').update({ status: newStatus }).eq('id', planId);
+    const { error } = await supabase.from('treatment_plans').update({ status: newStatus }).eq('id', planId).eq('doctor_id', user!.id);
+    if (error) console.error('Update status error:', error);
     fetchAll();
   }
 
@@ -157,7 +186,7 @@ export default function TreatmentPlanPage() {
         <div className="space-y-4">
           {filteredPlans.map(plan => {
             const st = STATUS_MAP[plan.status] || STATUS_MAP.active;
-            const patientName = (plan.profiles as unknown as { full_name: string })?.full_name ?? 'N/A';
+            const patientName = patients.find(p => p.id === plan.patient_id)?.full_name ?? 'N/A';
             const exList = plan.treatment_exercises ?? [];
             return (
               <div key={plan.id} className="bg-surface-container rounded-xl p-6 shadow-lg transition-all hover:shadow-xl">
